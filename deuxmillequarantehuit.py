@@ -121,12 +121,12 @@ class Tableau(object):
 
     def best_from_min_max(self, x):
         t = time.clock()
-        depth_max = 2
+        depth_max = 3
         moves_score = {}
         for m in MOVES:
             a = self.clone()
             a.move(m)
-            moves_score[m] = a.compute_all_random_apparition(0, depth_max)
+            moves_score[m] = a.compute_all_random_apparition(1, depth_max)
         moves = [m for m in moves_score if moves_score[m] == max(moves_score.values())]
         t = time.clock() - t
         #print("Hope at move ", self.moves + depth_max, " : ", max(moves_score.values()), "in ", t , " s.")
@@ -153,9 +153,10 @@ class Tableau(object):
             a = self.clone()
             a.move(m)
             if a.values != self.values:
-                v = a.score if depth == depth_max else a.compute_all_random_apparition(depth, depth_max)
-                if v > best_score:
-                    best_score = v
+                if any([x == 0 for x in a.values]) > 0:
+                    v = a.score if depth == depth_max else a.compute_all_random_apparition(depth, depth_max)
+                    if v > best_score:
+                        best_score = v
         return best_score
 
     def max_next(self, x):
