@@ -6,7 +6,7 @@ import sklearn as skl
 import neurolab as nl
 
 
-
+MAX_SCORE=100
 MOVES = ["l", "r", "d", "u"]
 
 class Tableau(object):
@@ -35,7 +35,7 @@ class Tableau(object):
             elif i + 1 < len(old_line) and old_line[i+1] == old_line[i]:
                 new_line[i] = 0
                 new_line[i+1] = 1 + old_line[i]
-                score += 2 ** (new_line[i+1])
+                score += new_line[i+1]
                 i += 2
             else:
                 new_line[i] = old_line[i]
@@ -232,9 +232,11 @@ def make_set_learning(n):
         while t.add_random():
             i = 0
             m = t.random_move(i)
-            new_input = t.values + move_to_array(m)
+            new_input = t.values
             t.move(m)
-            new_output = t.values
+            new_output = t.score/MAX_SCORE
+            if new_output > 1:
+                raise ValueError("Test output bigger than one: {}".format(new_output))
             input.append(np.array(new_input))
             output.append(np.array(new_output))
     return input, output
@@ -256,10 +258,8 @@ def nn():
     test_in, test_out = make_set_learning(m)
     print("Set computed")
     input_size = [[0,15] for x in range(16)]
-    for x in range(4):
-        input_size.append([0,1])
 
-    net = nl.net.newff(input_size, [64, 32, 16])
+    net = nl.net.newff(input_size, [32, 1])
     net.trainf = nl.train.train_rprop
     ecart_array = []
     while True:
