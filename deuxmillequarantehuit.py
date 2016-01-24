@@ -244,6 +244,10 @@ def make_input_size(p, mini, maxi):
     v = [a for i in range(p)]
     return v
 
+def compute_error(output_try, output_true):
+    ecart = np.sqrt(np.mean((output_try - output_true)**2))
+    return ecart
+
 def nn():
     n = 100
     m = 4
@@ -257,15 +261,16 @@ def nn():
 
     net = nl.net.newff(input_size, [64, 32, 16])
     net.trainf = nl.train.train_rprop
-    err = net.train(learn_in, learn_out, goal=-0.01, epochs=500, show=50)
+    ecart_array = []
+    while True:
+        err = net.train(learn_in, learn_out, goal=-0.01, epochs=500, show=50)
+        test_out_nn = net.sim(test_in)
+        ecart = compute_error(test_out, test_out_nn)
+        ecart_array.append(ecart)
+        print(ecart_array)
+        if len(ecart_array) > 2 and ecart_array[-2] > ecart_array[-1]:
+            break
 
-    print("a", test_in)
-    print("b", test_out)
-    valid_out = net.sim(test_in)
-    print("v", valid_out)
-    ecart = valid_out - test_out
-    print("error", ecart)
-    print("mean error", np.mean(ecart))
 
 if __name__ == '__main__':
     nn()
