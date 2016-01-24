@@ -263,12 +263,12 @@ def nn():
     net.trainf = nl.train.train_rprop
     ecart_array = []
     while True:
-        err = net.train(learn_in, learn_out, goal=-0.01, epochs=500, show=50)
+        err = net.train(learn_in, learn_out, goal=-0.01, epochs=10, show=10)
         test_out_nn = net.sim(test_in)
         ecart = compute_error(test_out, test_out_nn)
         ecart_array.append(ecart)
         print(ecart_array)
-        if len(ecart_array) > 2 and ecart_array[-2] > ecart_array[-1]:
+        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98:
             break
 
 
