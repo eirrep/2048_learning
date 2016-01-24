@@ -6,7 +6,7 @@ import sklearn as skl
 import neurolab as nl
 
 
-MAX_SCORE=100
+MAX_SCORE = 1000
 MOVES = ["l", "r", "d", "u"]
 
 class Tableau(object):
@@ -234,8 +234,8 @@ def make_set_learning(n):
             m = t.random_move(i)
             new_input = t.values
             t.move(m)
-            new_output = t.score/MAX_SCORE
-            if new_output > 1:
+            new_output = [t.score / MAX_SCORE]
+            if new_output[0] > 1:
                 raise ValueError("Test output bigger than one: {}".format(new_output))
             input.append(np.array(new_input))
             output.append(np.array(new_output))
@@ -251,8 +251,8 @@ def compute_error(output_try, output_true):
     return ecart
 
 def nn():
-    n = 100
-    m = 4
+    n = 1000
+    m = 10
     p = 20
     learn_in, learn_out = make_set_learning(n)
     test_in, test_out = make_set_learning(m)
