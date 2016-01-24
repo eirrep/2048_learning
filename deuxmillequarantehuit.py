@@ -174,6 +174,15 @@ class Tableau(object):
         print(max(moves_score.values()))
         return random.choice(moves)
 
+    def max_next_from_net(self, net):
+        moves_score = {}
+        for m in MOVES:
+            a = self.clone()
+            a.move(m)
+            moves_score[m] = net.sim(np.array([np.array(a.values)]))[0,0]
+        moves = sorted(moves_score, key=lambda x: moves_score[x], reverse=True)
+        return moves
+
     def ask(self, x):
         x = input("Quel mouvement ?")
         if x == "1":
@@ -188,6 +197,11 @@ class Tableau(object):
 
     def random_move(self, x):
         return random.choice(MOVES)
+
+    def random_move_list(self, x):
+        t = MOVES.copy()
+        random.shuffle(t)
+        return t
 
     def random_1(self, x):
         if x == 0:
@@ -213,6 +227,24 @@ def play(t, method, aff=False):
                 break
     t.affiche()
     print("moves ", t.moves, "   score ", t.score)
+
+
+def play_net(t, net, aff=False):
+    while t.add_random():
+        if aff or t.moves % 10 == 0:
+            t.affiche()
+            print("moves ", t.moves, "   score ", t.score)
+        i = 0
+        while True:
+            m = t.max_next_from_net(net)
+            i += 1
+            if t.move(m):
+                break
+            if i == 4:
+                break
+    t.affiche()
+    print("moves ", t.moves, "   score ", t.score)
+
 
 def move_to_array(dir):
     if dir == 'l':
@@ -241,25 +273,29 @@ def make_set_learning(n):
             output.append(np.array(new_output))
     return input, output
 
-def make_set_learning_2(n):
+def make_set_learning_2(n, net=None):
     input = []
     output_serie = []
     for i in range(n):
         t = Tableau()
-        new_output = []
+        new_output = [0]
         while t.add_random():
             i = 0
-            m = t.random_move(i)
+            if net is None:
+                list_m = t.random_move_list(i)
+            else:
+                list_m = t.max_next_from_net(net)
             new_input = t.values
-            t.move(m)
-            new_v = t.score / MAX_SCORE
-            if new_v > 1:
-                raise ValueError("Test output bigger than one: {}".format(new_v))
+            for m in list_m:
+                if t.move(m):
+                    break
+            new_v = t.score
             new_output.append(new_v)
             input.append(np.array(new_input))
-        for i in range(len(new_output)):
+        for i in range(len(new_output)-1):
             output_serie.append(new_output[i:])
-    output = np.array([np.array([treat_score_series(x)]) for x in output_serie])
+    output = np.array([np.array([treat_score_series(i,x)]) for i,x in enumerate(output_serie)])
+    print("Max score obtained : {}".format(np.max(output_serie)[-1]))
     return input, output
 
 
@@ -274,20 +310,14 @@ def compute_error(output_try, output_true):
     return ecart
 
 
-def treat_score_series(serie):
-    return np.mean(serie[:5])
+def treat_score_series(i, serie):
+    v = (serie[1] - serie[0]) / 30
+    if v >1:
+        raise ValueError("Should not be bigger than one.")
+    return v
 
 
-def nn():
-    n = 1
-    m = 1
-    p = 20
-    learn_in, learn_out = make_set_learning_2(n)
-    test_in, test_out = make_set_learning_2(m)
-    print("Set computed")
-    input_size = [[0,15] for x in range(16)]
-
-    net = nl.net.newff(input_size, [32, 1])
+def good_training(net, learn_in, learn_out, test_in, test_out):
     net.trainf = nl.train.train_rprop
     ecart_array = []
     while True:
@@ -295,11 +325,31 @@ def nn():
         test_out_nn = net.sim(test_in)
         ecart = compute_error(test_out, test_out_nn)
         ecart_array.append(ecart)
-        print(ecart_array)
-        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98:
+        print("Ecart array ", ecart_array)
+        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98 or True:
             break
+    return net
+
+
+def nn():
+    n = 1000
+    m = 10
+
+    net = None
+    for step in range(50):
+        print("-----------------------------------------------------")
+        learn_in, learn_out = make_set_learning_2(n, net=net)
+        test_in, test_out = make_set_learning_2(m, net=net)
+        print("Set computed for step {}".format(step))
+        input_size = [[0,15] for x in range(16)]
+        net = nl.net.newff(input_size, [32, 1])
+        net = good_training(net, learn_in, learn_out, test_in, test_out)
+
     return net
 
 
 if __name__ == '__main__':
     net = nn()
+    t = Tableau()
+    play_net(t, net)
+
