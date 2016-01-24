@@ -241,21 +241,49 @@ def make_set_learning(n):
             output.append(np.array(new_output))
     return input, output
 
+def make_set_learning_2(n):
+    input = []
+    output_serie = []
+    for i in range(n):
+        t = Tableau()
+        new_output = []
+        while t.add_random():
+            i = 0
+            m = t.random_move(i)
+            new_input = t.values
+            t.move(m)
+            new_v = t.score / MAX_SCORE
+            if new_v > 1:
+                raise ValueError("Test output bigger than one: {}".format(new_v))
+            new_output.append(new_v)
+            input.append(np.array(new_input))
+        for i in range(len(new_output)):
+            output_serie.append(new_output[i:])
+    output = np.array([np.array([treat_score_series(x)]) for x in output_serie])
+    return input, output
+
+
 def make_input_size(p, mini, maxi):
     a = [mini, maxi]
     v = [a for i in range(p)]
     return v
 
+
 def compute_error(output_try, output_true):
     ecart = np.sqrt(np.mean((output_try - output_true)**2))
     return ecart
 
+
+def treat_score_series(serie):
+    return np.mean(serie[:5])
+
+
 def nn():
-    n = 1000
-    m = 10
+    n = 1
+    m = 1
     p = 20
-    learn_in, learn_out = make_set_learning(n)
-    test_in, test_out = make_set_learning(m)
+    learn_in, learn_out = make_set_learning_2(n)
+    test_in, test_out = make_set_learning_2(m)
     print("Set computed")
     input_size = [[0,15] for x in range(16)]
 
@@ -263,14 +291,15 @@ def nn():
     net.trainf = nl.train.train_rprop
     ecart_array = []
     while True:
-        err = net.train(learn_in, learn_out, goal=-0.01, epochs=10, show=10)
+        err = net.train(learn_in, learn_out, goal=-0.01, epochs=20, show=10)
         test_out_nn = net.sim(test_in)
         ecart = compute_error(test_out, test_out_nn)
         ecart_array.append(ecart)
         print(ecart_array)
         if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98:
             break
+    return net
 
 
 if __name__ == '__main__':
-    nn()
+    net = nn()
