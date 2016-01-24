@@ -1,6 +1,11 @@
 from copy import copy
 import random
 import time
+import numpy as np
+import sklearn as skl
+import neurolab as nl
+
+
 
 MOVES = ["l", "r", "d", "u"]
 
@@ -138,7 +143,7 @@ class Tableau(object):
             return -1
         worst_score = None
         random.shuffle(num_0)
-        for index in num_0[:3]:
+        for index in num_0:
             for new_v in [1]:
                 new_t = self.clone()
                 new_t.values[index] = new_v
@@ -209,6 +214,58 @@ def play(t, method, aff=False):
     t.affiche()
     print("moves ", t.moves, "   score ", t.score)
 
+def move_to_array(dir):
+    if dir == 'l':
+        return [1,0,0,0]
+    if dir == 'r':
+        return [0,1,0,0]
+    if dir == 'd':
+        return [0,0,1,0]
+    if dir == 'u':
+        return [0,0,0,1]
+
+def make_set_learning(n):
+    input = []
+    output = []
+    for i in range(n):
+        t = Tableau()
+        while t.add_random():
+            i = 0
+            m = t.random_move(i)
+            new_input = t.values + move_to_array(m)
+            t.move(m)
+            new_output = t.values
+            input.append(np.array(new_input))
+            output.append(np.array(new_output))
+    return input, output
+
+def make_input_size(p, mini, maxi):
+    a = [mini, maxi]
+    v = [a for i in range(p)]
+    return v
+
+def nn():
+    n = 100
+    m = 4
+    p = 20
+    learn_in, learn_out = make_set_learning(n)
+    test_in, test_out = make_set_learning(m)
+    print("Set computed")
+    input_size = [[0,15] for x in range(16)]
+    for x in range(4):
+        input_size.append([0,1])
+
+    net = nl.net.newff(input_size, [64, 32, 16])
+    net.trainf = nl.train.train_rprop
+    err = net.train(learn_in, learn_out, goal=-0.01, epochs=500, show=50)
+
+    print("a", test_in)
+    print("b", test_out)
+    valid_out = net.sim(test_in)
+    print("v", valid_out)
+    ecart = valid_out - test_out
+    print("error", ecart)
+    print("mean error", np.mean(ecart))
+
 if __name__ == '__main__':
-    t = Tableau()
-    play(t, t.best_from_min_max, aff=False)
+    nn()
