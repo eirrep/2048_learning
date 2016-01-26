@@ -336,13 +336,13 @@ def good_training(net, learn_in, learn_out, test_in, test_out):
     ecart = compute_error(learn_out, learn_out_nn)
     print("Start - ecart on learning", ecart)
     while True:
-        err = net.train(learn_in, learn_out, goal=-0.01, epochs=5, show=10)
+        err = net.train(learn_in, learn_out, goal=-0.01, epochs=5, show=5)
         test_out_nn = net.sim(test_in)
         ecart = compute_error(test_out, test_out_nn)
         ecart_array.append(ecart)
-        print("Ecart array ", ecart_array)
-        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98:
+        if len(ecart_array) > 1 and ecart_array[-1] > ecart_array[-2]*0.98:
             break
+    print("Ecart array ", ecart_array)
     learn_out_nn = net.sim(learn_in)
     ecart = compute_error(learn_out, learn_out_nn)
     print("Stop - ecart on learning", ecart)
@@ -354,7 +354,7 @@ def nn():
     m = 10
 
     input_size = [[0,1] for x in range(16)]
-    net = nl.net.newff(input_size, [1])
+    net = nl.net.newff(input_size, [32, 1])
     for step in range(50):
         print("-----------------------------------------------------")
         learn_in, learn_out = make_set_learning_2(n, net=net)
