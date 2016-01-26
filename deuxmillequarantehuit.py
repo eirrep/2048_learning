@@ -295,8 +295,20 @@ def make_set_learning_2(n, net=None):
         for i in range(len(new_output)-1):
             output_serie.append(new_output[i:])
     output = np.array([np.array([treat_score_series(i,x)]) for i,x in enumerate(output_serie)])
-    print("Max score obtained : {}".format(np.max(output_serie)[-1]))
+    print("Avg score obtained : {}".format(np.mean(output)))
     return input, output
+
+
+def make_set_learning_try(n, net=None):
+    input = []
+    output = []
+    for i in range(n):
+        v = [random.random() for x in range(16)]
+        t = [np.mean(v)]
+        input.append(np.array(v))
+        output.append(np.array(t))
+    return input, output
+
 
 
 def make_input_size(p, mini, maxi):
@@ -312,7 +324,7 @@ def compute_error(output_try, output_true):
 
 def treat_score_series(i, serie):
     v = (serie[1] - serie[0]) / 30
-    if v >1:
+    if v > 1:
         raise ValueError("Should not be bigger than one.")
     return v
 
@@ -320,14 +332,20 @@ def treat_score_series(i, serie):
 def good_training(net, learn_in, learn_out, test_in, test_out):
     net.trainf = nl.train.train_rprop
     ecart_array = []
+    learn_out_nn = net.sim(learn_in)
+    ecart = compute_error(learn_out, learn_out_nn)
+    print("Start - ecart on learning", ecart)
     while True:
-        err = net.train(learn_in, learn_out, goal=-0.01, epochs=20, show=10)
+        err = net.train(learn_in, learn_out, goal=-0.01, epochs=5, show=10)
         test_out_nn = net.sim(test_in)
         ecart = compute_error(test_out, test_out_nn)
         ecart_array.append(ecart)
         print("Ecart array ", ecart_array)
-        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98 or True:
+        if len(ecart_array) > 2 and ecart_array[-1] > ecart_array[-2]*0.98:
             break
+    learn_out_nn = net.sim(learn_in)
+    ecart = compute_error(learn_out, learn_out_nn)
+    print("Stop - ecart on learning", ecart)
     return net
 
 
@@ -335,14 +353,13 @@ def nn():
     n = 1000
     m = 10
 
-    net = None
+    input_size = [[0,1] for x in range(16)]
+    net = nl.net.newff(input_size, [1])
     for step in range(50):
         print("-----------------------------------------------------")
         learn_in, learn_out = make_set_learning_2(n, net=net)
         test_in, test_out = make_set_learning_2(m, net=net)
         print("Set computed for step {}".format(step))
-        input_size = [[0,15] for x in range(16)]
-        net = nl.net.newff(input_size, [32, 1])
         net = good_training(net, learn_in, learn_out, test_in, test_out)
 
     return net
